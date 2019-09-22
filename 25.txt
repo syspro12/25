@@ -1,0 +1,343 @@
+1)****************************************************************************
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+char sfname[10],tfname[10],instr[80],w1[10],w2[60],w3[10],w4[10],mdt[50][4][20];
+FILE *sfp,*tfp;	int mc=0,pntcnt,mec;
+struct MNT
+{	char mname[10]; int pp,kp,pntptr,mdtstart,mdtend;}mnt[10];
+struct PNT
+{	char pname[20],defval[20],actval[20];}pnt[40];
+int searchpnt(char w[])
+{
+	int i;	for(i=mnt[mc].pntptr ; i<mnt[mc].pntptr+mnt[mc].pp+mnt[mc].kp; i++)
+				if(!stricmp(pnt[i].pname,w))	return i;
+				return -1;
+}
+int searchkpt(int pos,char w[])
+{
+	int i,j;	for(i=mnt[pos].pntptr+mnt[pos].pp,j=0 ; j<mnt[pos].kp ; i++,j++)
+				if(!stricmp(w,pnt[i].pname))	return i;
+				return -1;
+}
+int searchmnt(char w[])
+{
+	int i;	for(i=0; i<mc ; i++)	if(!stricmp(mnt[i].mname,w))	return i;
+				return -1;
+}
+void MDP()
+{
+	int n;	fgets(instr,80,sfp);
+	n=sscanf(instr,"%s %s",w1,w2);
+	printf("%s\t%s\n",w1,w2);
+
+	strcpy(mnt[mc].mname,w1);
+	if(n==2)
+	{  int i,j;char *p; mnt[mc].pntptr=pntcnt;
+		for(p=strtok(w2,",") ; p ;  )
+		{
+			
+			if(!strchr(p,'='))
+			{
+				puts(p);
+				strcpy(pnt[pntcnt].pname,p);
+				strcpy(pnt[pntcnt++].actval,p); mnt[mc].pp++;
+			}
+			else
+			{
+				 char *q,str[50];
+				 q=NULL;
+				 strcpy(str,p);
+				 q=strtok(str,"=");
+				 puts(q);
+				 strcpy(pnt[pntcnt].pname,q);
+				 q=strtok(NULL,",");
+				 puts(q);
+				 strcpy(pnt[pntcnt++].defval,q); mnt[mc].kp++;
+				 break;
+			}
+			p=strtok(NULL,",");
+		}
+		
+	}
+	mnt[mc+1].pntptr=pntcnt;
+	fgets(instr,80,sfp);	sscanf(instr,"%s %s %s %s",w1,w2,w3,w4);
+	mnt[mc].mdtstart=mec;
+	for( ; stricmp(w1,"mend") ; mec++)
+	{  int v;char str[10];
+		if(w1[0]!='&')	strcpy(mdt[mec][0],w1);
+		else	if(searchpnt(w1)!=-1)
+				{  v=searchpnt(w1);
+					itoa(v,str,10);
+					strcpy(mdt[mec][0],str);
+				}else printf("varialble is not defined in macro prototype.\n");
+		if(w2[0]!='&')	strcpy(mdt[mec][1],w2);
+		else	if((v=searchpnt(w2))!=-1)
+				{
+					v=searchpnt(w2);
+					itoa(v,str,10);
+					strcpy(mdt[mec][1],str);
+				}else printf("varialble is not defined in macro prototype.\n");
+		if(w3[0]!='&')	strcpy(mdt[mec][2],w3);
+		else	if((v=searchpnt(w3))!=-1)
+				{  v=searchpnt(w3);
+					itoa(v,str,10);
+					strcpy(mdt[mec][2],str);
+				}else printf("varialble is not defined in macro prototype.\n");
+		if(w4[0]!='&')	strcpy(mdt[mec][3],w4);
+		else	if((v=searchpnt(w4))!=-1)
+				{  v=searchpnt(w4);
+					itoa(v,str,10);
+					strcpy(mdt[mec][3],str);
+				}else printf("varialble is not defined in macro prototype.\n");
+		fgets(instr,80,sfp);	sscanf(instr,"%s %s %s %s",w1,w2,w3,w4);
+	}
+	mnt[mc].mdtend=mec;
+}
+void displaypnt()
+{
+	 int i; 	printf("\n---------Parameter Name Table--------\npname\tdefval\tactval\n");
+				for(i=0 ; i<pntcnt ; i++)	printf("%s\t%s\t%s\n",pnt[i].pname,pnt[i].defval,pnt[i].actval);
+}
+void display()
+{
+	int i,j;
+	printf("\n---------Macro Name Table--------\nmname\tpp\tkp\tpntptr\tmdtstart\tmdtend\n");
+	for(i=0 ; i<mc ; i++)	printf("%s\t%d\t%d\t%d\t%d\t%d\n",mnt[i].mname,mnt[i].pp,mnt[i].kp,mnt[i].pntptr,mnt[i].mdtstart,mnt[i].mdtend);
+	printf("\n---------Macro Definition Table--------\n");
+	for(i=0 ; i<mec ; i++)
+	{
+		for(j=0 ; j<4 ; j++)	printf("%s\t",mdt[i][j]);
+		printf("\n");
+	}
+}
+void MCP(int pos,int no)
+{  int i,j;
+	for(i=0;i<pntcnt;i++)
+		strcpy(pnt[i].actval,"\0");
+	if(no==2)
+	{
+		int v,count=mnt[pos].pntptr;	char *p;
+		for(p=strtok(w2,",") ; p ;  )
+		{
+			
+			if(!strchr(p,'='))
+			{
+				puts(p);
+				strcpy(pnt[count++].actval,p);
+			}
+			else
+			{
+				 char *q,str[50];
+				 q=NULL;
+				 strcpy(str,p);
+				 q=strtok(str,"=");
+				 puts(q);
+				 v=searchkpt(pos,q);
+				 q=strtok(NULL,",");
+				 puts(q);
+				 strcpy(pnt[v].actval,q);
+			}
+			p=strtok(NULL,",");
+		}
+		
+		if(count!=mnt[pos].pp+mnt[pos].pntptr){ printf("Positional parameter compulsory\n");exit(0);}
+		displaypnt();
+	}
+	for(i=mnt[pos].mdtstart ; i<mnt[pos].mdtend ; i++)
+	{
+		for(j=0 ; j<4 ; j++)
+		{
+			if(mdt[i][j][0]>=48 && mdt[i][j][0]<57)
+			{
+				int index = atoi(mdt[i][j]);
+				if(strcmp(pnt[index].actval,"\0"))
+					fprintf(tfp,"%s ",pnt[index].actval);
+				else
+					fprintf(tfp,"%s ",pnt[index].defval);
+			}else	fprintf(tfp,"%s ",mdt[i][j]);
+		}fprintf(tfp,"\n");
+	}
+}
+int main(int argc, char *argv[])
+{
+	if(argc==2)
+		strcpy(sfname,argv[1]);
+	else
+	{	printf("Enter source file : "); scanf("%s",sfname);
+		printf("Enter target file : "); scanf("%s",tfname);
+	}
+	//strcpy(tfname,sfname);	strcat(tfname,"~");
+	sfp=fopen(sfname,"r");
+	tfp=fopen(tfname,"w+");
+	if(sfp==NULL)	{	printf("File not exist.\n"); exit(0);	}
+	else
+	{	while(!feof(sfp))
+		{
+			int n;fgets(instr,80,sfp); n=sscanf(instr,"%s %s",w1,w2);
+			if(!feof(sfp))
+			{  
+				if(stricmp(w1,"macro")==0)		{	MDP(); mc++;	}
+				else if(searchmnt(w1)!=-1)	MCP(searchmnt(w1),n);
+				else	fprintf(tfp,"%s",instr);
+			}
+		}
+	}display();
+	fclose(sfp);fclose(tfp);
+	return 0;
+}
+
+2)****************************************************************************
+
+
+#include<stdio.h>
+int n,nf;
+int in[100];
+int p[50];
+int hit=0;
+int i,j,k;
+int pgfaultcnt=0;
+
+void getData()
+{
+    printf("\nEnter length of page reference sequence:");
+    scanf("%d",&n);
+    printf("\nEnter the page reference sequence:");
+    for(i=0; i<n; i++)
+        scanf("%d",&in[i]);
+    printf("\nEnter no of frames:");
+    scanf("%d",&nf);
+}
+
+void initialize()
+{
+    pgfaultcnt=0;
+    for(i=0; i<nf; i++)
+        p[i]=9999;
+}
+
+int isHit(int data)
+{
+    hit=0;
+    for(j=0; j<nf; j++)
+    {
+        if(p[j]==data)
+        {
+            hit=1;
+            break;
+        }
+
+    }
+
+    return hit;
+}
+
+int getHitIndex(int data)
+{
+    int hitind;
+    for(k=0; k<nf; k++)
+    {
+        if(p[k]==data)
+        {
+            hitind=k;
+            break;
+        }
+    }
+    return hitind;
+}
+
+void dispPages()
+{
+    for (k=0; k<nf; k++)
+    {
+        if(p[k]!=9999)
+            printf(" %d",p[k]);
+    }
+
+}
+
+void dispPgFaultCnt()
+{
+    printf("\nTotal no of page faults:%d",pgfaultcnt);
+}
+
+
+
+2)******************************
+
+
+
+#include<stdio.h>
+int main()
+{
+  int f,p;
+  int pages[50],frame[10],hit=0,count[50],time[50];
+  int i,j,page,flag,least,minTime,temp;
+ 
+  printf("Enter no of frames : ");
+  scanf("%d",&f);
+  printf("Enter no of pages : ");
+  scanf("%d",&p);
+ 
+  for(i=0;i<f;i++)
+  {
+    frame[i]=-1;
+  }
+  for(i=0;i<50;i++)
+  {
+    count[i]=0;
+  }
+  printf("Enter page no : \n");
+  for(i=0;i<p;i++)
+  {
+    scanf("%d",&pages[i]);
+  }
+  printf("\n");
+  for(i=0;i<p;i++)
+  {
+    count[pages[i]]++;
+    time[pages[i]]=i;
+    flag=1;
+    least=frame[0];
+    for(j=0;j<f;j++)
+    {
+      if(frame[j]==-1 || frame[j]==pages[i])
+      {
+        if(frame[j]!=-1)
+        {
+            hit++;
+        }
+        flag=0;
+        frame[j]=pages[i];
+        break;
+      }
+      if(count[least]>count[frame[j]])
+      {
+        least=frame[j];
+      }
+    }
+    if(flag)
+    {
+      minTime=50;
+      for(j=0;j<f;j++)
+      {
+        if(count[frame[j]]==count[least] && time[frame[j]]<minTime)
+        {
+          temp=j;
+          minTime=time[frame[j]];
+        }
+      }
+      count[frame[temp]]=0;
+      frame[temp]=pages[i];
+    }
+    for(j=0;j<f;j++)
+    {
+      printf("%d ",frame[j]);
+    }
+    printf("\n");
+  }
+  printf("Page hit = %d",hit);
+  return 0;
+}
+
